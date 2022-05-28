@@ -37,7 +37,6 @@ inline bool allow_in_scheme(char ch) {
   return false;
 }
 
-
 inline bool allow_in_host(char ch) {
   switch (ch) {
   case 'a' ... 'z':
@@ -111,11 +110,7 @@ enum {
 
 } // namespace imple
 
-enum
-{
-    Invalid = -1,
-    Ok
-};
+enum { Invalid = -1, Ok };
 
 // Best for http...
 class url {
@@ -130,25 +125,20 @@ private:
   int state_;
 
 public:
-  url(): port_(0), state_(0) {}
+  url() : port_(0), state_(0) {}
   url(const url &) = default;
   ~url() = default;
 
-  url(url &&u) noexcept :
-    scheme_(std::move(u.scheme_)),
-    account_(std::move(u.account_)),
-    password_(std::move(u.password_)),
-    host_(std::move(u.host_)),
-    port_(std::move(u.port_)),
-    abs_path_(std::move(u.abs_path_)),
-    state_(u.state_)
-  {
-      u.port_ = 0;
-      u.state_ = 0;
+  url(url &&u) noexcept
+      : scheme_(std::move(u.scheme_)), account_(std::move(u.account_)),
+        password_(std::move(u.password_)), host_(std::move(u.host_)),
+        port_(std::move(u.port_)), abs_path_(std::move(u.abs_path_)),
+        state_(u.state_) {
+    u.port_ = 0;
+    u.state_ = 0;
   }
 
-  url &operator=(url &&u) noexcept
-  {
+  url &operator=(url &&u) noexcept {
     scheme_ = std::move(u.scheme_);
     account_ = std::move(u.account_);
     password_ = std::move(u.password_);
@@ -162,35 +152,32 @@ public:
   }
 
   int parse(char ch);
-  int parse(const char *str, std::size_t len)
-  {
-      int code = Ok;
-      for (auto i = 0; i < len; ++i)
-      {
-        if (parse(str[i]) == Invalid)
-        {
-            return Invalid;
-        }
+  int parse(const char *str, std::size_t len) {
+    int code = Ok;
+    for (auto i = 0; i < len; ++i) {
+      if (parse(str[i]) == Invalid) {
+        return Invalid;
       }
-      return code;
+    }
+    return code;
   }
   int parse(const std::string &str) { return parse(str.c_str(), str.size()); }
 
 #ifdef LIGHTPARSERCXX17
-  int parse(std::string_view str) { return parse(str.c_str(), str.size()); }
+  int parse(std::string_view str) { return parse(str.data(), str.size()); }
 #endif
 
   std::string &scheme_ref() { return scheme_; }
   std::string scheme() { return scheme_; }
-  std::string &account_ref() { return account_;  }
-  std::string account() { return account_;  }
+  std::string &account_ref() { return account_; }
+  std::string account() { return account_; }
   std::string &password_ref() { return password_; }
-  std::string password() { return password_;  }
-  std::string &host_ref() { return host_;  }
+  std::string password() { return password_; }
+  std::string &host_ref() { return host_; }
   std::string host() { return host_; }
-  std::size_t &port_ref() { return port_;  }
-  std::string &abs_path_ref() { return abs_path_;  }
-  std::string abs_path() { return abs_path_;  }
+  std::size_t &port_ref() { return port_; }
+  std::string &abs_path_ref() { return abs_path_; }
+  std::string abs_path() { return abs_path_; }
 
   void reset() {
     scheme_.clear();
@@ -199,153 +186,135 @@ public:
     host_.clear();
     port_ = 0;
     abs_path_.clear();
+
     state_ = 0;
   }
 };
 
-inline int url::parse(char ch)
-{
-    using namespace imple;
+inline int url::parse(char ch) {
+  using namespace imple;
 
-    switch (state_)
-    {
-    case url_start:
-        if (ch == '/')
-        {
-            state_ = url_abs_path;
-            abs_path_.push_back(ch);
-            break;
-        }
-
-        if (!allow_in_scheme(ch)) 
-        {
-            return Invalid;
-        }
-
-        scheme_.push_back(ch);
-        state_ = url_scheme;
-        break;
-    
-    case url_scheme:
-        if (ch == ':')
-        {
-            state_ = url_scheme_colon;
-            break;
-        }
-
-        if (!allow_in_scheme(ch))
-        {
-            return Invalid;
-        }
-
-        scheme_.push_back(ch);
-        break;
-
-    case url_scheme_colon:
-        if (ch != '/')
-        {
-            return Invalid;
-        }
-        state_ = url_scheme_colon_slash;
-        break;
-
-    case url_scheme_colon_slash:
-        if (ch != '/')
-        {
-            return Invalid;
-        }
-        state_ = url_scheme_colon_slash_slash;
-        break;
-
-    case url_scheme_colon_slash_slash:
-        // Maybe account...
-        if (!allow_in_host(ch))
-        {
-            return Invalid;
-        }
-        account_.push_back(ch);
-        state_ = url_account;
-        break;
-
-    case url_account:
-        if (ch == ':')
-        {
-            state_ = url_password;
-            break;
-        }
-        account_.push_back(ch);
-        break;
-    
-    case url_password:
-        // Shoule be port not password
-        if (ch == '/')
-        {
-            host_ = std::move(account_);
-            port_ = 0;
-            for (auto i : password_)
-            {
-                if (i < '0' || i > '9')
-                    return Invalid;
-                port_ = port_ * 10 + i - '0';
-            }
-            password_.clear();
-            abs_path_.push_back(ch);
-            state_ = url_abs_path;
-            break;
-        }
-
-        // Ok this is password
-        if (ch == '@')
-        {
-            state_ = url_host;
-            break;
-        }
-
-        password_.push_back(ch);
-        break;
-
-    case url_host:
-        if (ch == ':')
-        {
-            port_ = 0;
-            state_ = url_port;
-            break;
-        }
-
-        if (!allow_in_host(ch))
-        {
-            return Invalid;
-        }
-    
-        host_.push_back(ch);
-        break;
-
-    case url_port:
-        if (ch == '/')
-        {
-            state_ = url_abs_path;
-            abs_path_.push_back(ch);
-            break;
-        }
-
-        if (ch < '0' || ch > '9')
-        {
-            return Invalid;
-        }
-
-        port_ = port_ * 10 + ch - '0';
-        break;
-
-    case url_abs_path:
-      if (!allow_in_path(ch)) 
-      {
-        return Invalid;
-      }
+  switch (state_) {
+  case url_start:
+    if (ch == '/') {
+      state_ = url_abs_path;
       abs_path_.push_back(ch);
       break;
     }
 
-    return Ok;
+    if (!allow_in_scheme(ch)) {
+      return Invalid;
+    }
+    scheme_.push_back(ch);
+    state_ = url_scheme;
+    break;
+
+  case url_scheme:
+    if (ch == ':') {
+      state_ = url_scheme_colon;
+      break;
+    }
+
+    if (!allow_in_scheme(ch)) {
+      return Invalid;
+    }
+
+    scheme_.push_back(ch);
+    break;
+
+  case url_scheme_colon:
+    if (ch != '/') {
+      return Invalid;
+    }
+    state_ = url_scheme_colon_slash;
+    break;
+
+  case url_scheme_colon_slash:
+    if (ch != '/') {
+      return Invalid;
+    }
+    state_ = url_scheme_colon_slash_slash;
+    break;
+
+  case url_scheme_colon_slash_slash:
+    // Maybe account...
+    if (!allow_in_host(ch)) {
+      return Invalid;
+    }
+    account_.push_back(ch);
+    state_ = url_account;
+    break;
+
+  case url_account:
+    if (ch == ':') {
+      state_ = url_password;
+      break;
+    }
+    account_.push_back(ch);
+    break;
+
+  case url_password:
+    // Shoule be port not password
+    if (ch == '/') {
+      host_ = std::move(account_);
+      port_ = 0;
+      for (auto i : password_) {
+        if (i < '0' || i > '9')
+          return Invalid;
+        port_ = port_ * 10 + i - '0';
+      }
+      password_.clear();
+      abs_path_.push_back(ch);
+      state_ = url_abs_path;
+      break;
+    }
+
+    // Ok this is password
+    if (ch == '@') {
+      state_ = url_host;
+      break;
+    }
+
+    password_.push_back(ch);
+    break;
+
+  case url_host:
+    if (ch == ':') {
+      port_ = 0;
+      state_ = url_port;
+      break;
+    }
+
+    if (!allow_in_host(ch)) {
+      return Invalid;
+    }
+
+    host_.push_back(ch);
+    break;
+
+  case url_port:
+    if (ch == '/') {
+      state_ = url_abs_path;
+      abs_path_.push_back(ch);
+      break;
+    }
+
+    if (ch < '0' || ch > '9') {
+      return Invalid;
+    }
+
+    port_ = port_ * 10 + ch - '0';
+    break;
+
+  case url_abs_path:
+    if (!allow_in_path(ch)) {
+      return Invalid;
+    }
+    abs_path_.push_back(ch);
+    break;
+  }
+
+  return Ok;
 }
 
 } // namespace lighturl
