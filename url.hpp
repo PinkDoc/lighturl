@@ -49,7 +49,7 @@ inline bool allow_in_host(char ch) {
   }
 }
 
-bool allow_in_path(char c) {
+inline bool allow_in_path(char c) {
   static bool tab[256] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //   0
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //  16
@@ -71,7 +71,7 @@ bool allow_in_path(char c) {
   return tab[static_cast<unsigned char>(c)];
 }
 
-bool is_unhex(unsigned char &d, char c) {
+inline bool is_unhex(unsigned char &d, char c) {
   static signed char tab[256] = {
       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, //   0
       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, //  16
