@@ -151,6 +151,36 @@ public:
     return *this;
   }
 
+  std::string print() {
+    std::string s;
+
+    if (scheme_.size() > 0) {
+      s.append(scheme_);
+      s.append("://");
+    }
+
+    if (account_.size() > 0) {
+      s.append(account_);
+      s.push_back(':');
+      s.append(password_);
+      s.push_back('@');
+    }
+
+    if (host_.size() > 0) {
+      s.append(host_);
+      if (port_ > 0) {
+        s.push_back(':');
+        s.append(std::to_string(static_cast<int>(port_)));
+      }
+    }
+
+    if (abs_path_.size() > 0) {
+      s.append(abs_path_);
+    }
+
+    return s;
+  }
+
   int parse(char ch);
   int parse(const char *str, std::size_t len) {
     int code = Ok;
@@ -250,6 +280,13 @@ inline int url::parse(char ch) {
       state_ = url_password;
       break;
     }
+    // Should be host
+    if (ch == '/') {
+      host_ = std::move(account_);
+      abs_path_.push_back(ch);
+      state_ = url_abs_path;
+      break;
+    }
     account_.push_back(ch);
     break;
 
@@ -282,6 +319,12 @@ inline int url::parse(char ch) {
     if (ch == ':') {
       port_ = 0;
       state_ = url_port;
+      break;
+    }
+
+    if (ch == '/') {
+      abs_path_.push_back(ch);
+      state_ = url_abs_path;
       break;
     }
 
