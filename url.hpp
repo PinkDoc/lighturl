@@ -105,12 +105,14 @@ enum {
   url_password,
   url_host,
   url_port,
-  url_abs_path
+  url_abs_path,
+  url_query,
+  url_params
 };
 
 } // namespace imple
 
-enum { Invalid = -1, Ok };
+enum { Invalid = -1, Ok = 1 };
 
 // Best for http...
 class url {
@@ -121,6 +123,8 @@ private:
   std::string host_;
   std::size_t port_;
   std::string abs_path_;
+  std::string query_;
+  std::string params_;
 
   int state_;
 
@@ -133,6 +137,7 @@ public:
       : scheme_(std::move(u.scheme_)), account_(std::move(u.account_)),
         password_(std::move(u.password_)), host_(std::move(u.host_)),
         port_(std::move(u.port_)), abs_path_(std::move(u.abs_path_)),
+        query_(std::move(u.query_)), params_(std::move(u.params_)),
         state_(u.state_) {
     u.port_ = 0;
     u.state_ = 0;
@@ -146,6 +151,8 @@ public:
     port_ = u.port_;
     u.port_ = 0;
     abs_path_ = std::move(u.abs_path_);
+    query_ = std::move(u.query_);
+    params_ = std::move(u.params_);
     state_ = u.state_;
     u.state_ = 0;
     return *this;
@@ -178,6 +185,16 @@ public:
       s.append(abs_path_);
     }
 
+    if (query_.size() > 0) {
+      s.push_back('?');
+      s.append(query_);
+    }
+
+    if (params_.size() > 0) {
+      s.push_back('#');
+      s.append(params_);
+    }
+
     return s;
   }
 
@@ -208,6 +225,10 @@ public:
   std::size_t &port_ref() { return port_; }
   std::string &abs_path_ref() { return abs_path_; }
   std::string abs_path() { return abs_path_; }
+  std::string &query_ref() { return query_; }
+  std::string query() { return query_; }
+  std::string &params_ref() { return params_; }
+  std::string params() { return params_; }
 
   void reset() {
     scheme_.clear();
@@ -216,7 +237,8 @@ public:
     host_.clear();
     port_ = 0;
     abs_path_.clear();
-
+    query_.clear();
+    params_.clear();
     state_ = 0;
   }
 };
@@ -350,10 +372,40 @@ inline int url::parse(char ch) {
     break;
 
   case url_abs_path:
+    if (ch == '?') {
+      state_ = url_query;
+      break;
+    }
+
+    if (ch == '#') {
+      state_ = url_params;
+      break;
+    }
+
     if (!allow_in_path(ch)) {
       return Invalid;
     }
     abs_path_.push_back(ch);
+    break;
+
+  case url_query:
+    if (ch == '#') {
+      state_ = url_params;
+      break;
+    }
+
+    if (!allow_in_path(ch)) {
+      return Invalid;
+    }
+
+    query_.push_back(ch);
+    break;
+
+  case url_params:
+    if (!allow_in_path(ch)) {
+      return Invalid;
+    }
+    params_.push_back(ch);
     break;
   }
 

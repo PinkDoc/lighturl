@@ -6,11 +6,11 @@ int main()
 {
     using namespace lighturl;
     url hu, fu;
-    std::string http = "http://localhost:8080/index.html#p3";
+    std::string http = "http://localhost:8080/index.html?a==b&c==d#p3";
     std::string ftp = "ftp://pink:1234567@localhost:2000/lover.mp3";
     hu.parse(http);
     fu.parse(ftp);
-
+    std::cout << hu.query() << " " << hu.params();
     std::cout << fu.print() << std::endl;
     std::cout << hu.print() << std::endl;
     std::string s = hu.print();
@@ -33,5 +33,8 @@ int main()
     }
 
     std::cout << u.print() << std::endl;
-}
 
+    auto mv_u = std::move(u);
+    std::cout << u.print() << std::endl;
+    std::cout << mv_u.print() << std::endl;
+}
