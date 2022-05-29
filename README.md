@@ -1,24 +1,38 @@
-# URL parser for modern c++
+# url parser for modern c++
 
 ### usage
 
 ```
-std::string s = "https://www.google.com/index.html"
-url u;
-auto code = u.parse(s);	// Ok or Invalid
+url hu, fu;
+std::string http = "http://localhost:8080/index.html#p3";
+std::string ftp = "ftp://pink:1234567@localhost:2000/lover.mp3";
+hu.parse(http);
+fu.parse(ftp);
 
-auto mv_u = std::move(u); // Move 
-auto cp_u = u; // Copy
+assert(hu.host_ref() == "localhost");
+assert(hu.port_ref() == 8080);
+assert(fu.account_ref() == "pink");
+
+auto cp_fu(fu);			// copy
+auto mv_hu(std::move(hu));	// move
 
 // For networking
-// The buffer can't recv for once, string may be like this "http:/",
-// Your code should like this:
-for (int i = lastIndex; i < s.size() ; ++i)
-	if (u.parse(s[i]) != Ok) 
-	{
-		handle_err(...);
-	}
+std::string buffer = "http:/";
+url u;
+auto len = buffer.size();
+for (auto i = 0; i < buffer.size(); ++i)
+{
+    u.parse(buffer[i]);
+}
 
+// buffer recv more data
+buffer += "/192.168.1.1/index.htm";
+for (auto i = len; i < buffer.size(); ++i)
+{
+    u.parse(buffer[i]);
+}
+
+std::cout << u.print() << std::endl;
 
 
 ```
