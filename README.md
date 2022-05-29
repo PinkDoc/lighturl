@@ -1,5 +1,4 @@
-# url parser for modern c++
-
+# url lib for modern cpp
 ### usage
 
 ```
