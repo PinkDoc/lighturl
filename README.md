@@ -1,4 +1,7 @@
 ## Lighturl
+#### Features
+* A streaming-parsing url parser
+* Url string writer
 ### Usage
 
 ```
